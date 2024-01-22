@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Login</title>
+    <link href="http://getbootstrap.com/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="http://getbootstrap.com/examples/jumbotron-narrow/jumbotron-narrow.css" rel="stylesheet">
+
+</head>
+
+<body>
+
+<div class="container">
+    <div class="header">
+        <nav>
+            <ul class="nav nav-pills pull-right">
+                <li role="presentation" class="active"><a href="#">Home</a>
+                </li>
+                {%if username is defined %}
+                <li role="presentation"> <h1>Logged in {{username}}</h1></li>
+                {% else %}
+                <li role="presentation"><a href="/signin">Sign In</a>
+                </li>
+                <li role="presentation"><a href="/signup">Sign Up</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+
+    <div class="jumbotron">
+        <p class="lead"></p>
+        {%if username is defined %}
+        <li role="presentation"><a href="/logout"> Logout</a>
+        </li>
+        {% else %}
+        <p><a class="btn btn-lg btn-success" href="signup" role="button">Sign up today</a>
+        </p>
+        {% endif %}
+    </div>
+
+</div>
+</body>
+
+</html>
