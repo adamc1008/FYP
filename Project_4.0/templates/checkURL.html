@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Home Page{% endblock %}
+{% block content %}
+<h1>Enter URL to check</h1>
+<form action="/checkURL" method="POST">
+    <p>URL to Check <input type="text" name="URL" /></p>
+    <p><input type="submit" value="submit" /></p>
+</form>
+
+{%if result is defined %}
+<p1>{{result}}</p1>
+{% endif %}
+
+{% endblock %}
+
