@@ -1,40 +1,34 @@
-from flask import Flask, render_template, url_for, request, session, redirect, flash
+import json
+from flask import Flask, jsonify, render_template, url_for, request, session, redirect, flash
 from flask_pymongo import PyMongo
 from pymongo.errors import PyMongoError
 from pymongo.mongo_client import MongoClient
+#from flask_session import Session
+import configparser
 import bcrypt
+import requests
+
+config = configparser.ConfigParser()
+config.read('config.ini')
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = "71382d27b4b3b5303c3bd99f68f0b725a032efd4"
+app.config["SECRET_KEY"] = config['Database']['secret_key']
 
 #app.config['MONGO_DBNAME'] = 'users'
-app.config["MONGO_URI"] = "mongodb+srv://adamcdan:Ie3Bx4NVdXIEII5m@cluster0.l12dwnm.mongodb.net/?retryWrites=true&w=majority"
+#app.config['SESSION_TYPE'] = 'mongodb'
+app.config["MONGO_URI"] = config['Database']['Mongo_URI']
 
-client = MongoClient("mongodb+srv://adamcdan:Ie3Bx4NVdXIEII5m@cluster0.l12dwnm.mongodb.net/?retryWrites=true&w=majority")
 
-'''
-uri = "mongodb+srv://adamcdan:Ie3Bx4NVdXIEII5m@cluster0.l12dwnm.mongodb.net/?retryWrites=true&w=majority"
-# Create a new client and connect to the server
-client = MongoClient(uri)
-# Send a ping to confirm a successful connection
+client = MongoClient(config['Database']['Mongo_URI'])
+
 try:
-    client.admin.command('ping')
-    print("Pinged your deployment. You successfully connected to MongoDB!")
-except Exception as e:
-    print(e)
-'''
-try:
-    mongo = PyMongo(app)
+    #mongo = PyMongo(app)
     db = client.users["users"]
+    #Session(app)
 except PyMongoError as e:
     print(f"Error connecting to MongoDB: {e}")
-
-try:
-    mongo.admin.command('ping')
-    print("Pinged your deployment. You successfully connected to MongoDB!")
-except Exception as e:
-    print(e)
-
+    
+    
 @app.route("/")
 @app.route("/main")
 def main():
@@ -81,6 +75,110 @@ def signin():
 
     return render_template('signin.html')
 
+@app.route('/checkAccount', methods = ['POST', 'GET'])
+def checkAccount():
+    if request.method == 'GET':
+        return render_template('checkAccount.html', username=session['username'])
+    if request.method == 'POST':
+        url = "https://email-data-leak-checker.p.rapidapi.com/emaild"
+
+        querystring = {"email": request.form.get('account')}
+
+        headers = {
+	        "User-Agent": "application-name",
+	        "Content-Type": "application/json",
+	        "X-RapidAPI-Key": config['API']['email_data_leak_checker_key'],
+	        "X-RapidAPI-Host": "email-data-leak-checker.p.rapidapi.com"
+        }
+
+        response = requests.get(url, headers=headers, params=querystring)
+        print(response.json())
+        return render_template('checkAccount.html', result = response.json() ,username=session['username'])
+        #return render_template('checkAccount.html', results=response.json)
+
+@app.route('/checkURL', methods = ['POST', 'GET'])
+def checkURL():
+    if request.method == 'GET':
+        return render_template('checkURL.html', username=session['username'])
+    if request.method == 'POST':
+
+
+        url = "https://www.virustotal.com/api/v3/urls"
+
+        if not request.form.get('URL'):
+            return render_template('checkFile.html', result = "No input detected" ,username=session['username'])
+        
+        payload = { "url": request.form.get('URL') }
+        headers = {
+            "accept": "application/json",
+            "x-apikey": config['API']['virus_total_key'],
+            "content-type": "application/x-www-form-urlencoded"
+        }
+
+        response = requests.post(url, data=payload, headers=headers)
+        data = response.json()
+        print(data)
+        id = data['data']['id']
+
+        print(response.text)
+
+        url = "https://www.virustotal.com/api/v3/analyses/" + id
+
+        headers = {
+            "accept": "application/json",
+            "x-apikey": config['API']['virus_total_key']
+        }
+
+        result = requests.get(url, headers=headers)
+        data = result.json()
+        stats = data['data']['attributes']['stats']
+
+        print(stats)
+
+        #print(response.json())
+        return render_template('checkURL.html', result = stats ,username=session['username'])
+        #return render_template('checkAccount.html', results=response.json)
+
+
+@app.route('/checkFile', methods = ['POST', 'GET'])
+def checkRoute():
+    if request.method == 'GET':
+        return render_template('checkFile.html', username=session['username'])
+    if request.method == 'POST':
+
+
+        url = "https://www.virustotal.com/api/v3/files"
+
+        file = request.files['file']
+        if not file:
+            return render_template('checkFile.html', result = "Unable to pass file to the server" ,username=session['username'])
+        file.save(file.filename)
+
+        #payload = { "url": request.form.get('file') }
+        files = { "file": (file.filename, open(file.filename, "rb"), "text/plain") }
+        headers = {
+            "accept": "application/json",
+            "x-apikey": config['API']['virus_total_key']
+        }
+
+        response = requests.post(url, files=files, headers=headers)
+        data = response.json()
+        id = data['data']['id']
+
+        ################################################
+
+        url = "https://www.virustotal.com/api/v3/analyses/" + id
+
+        headers = {
+            "accept": "application/json",
+            "x-apikey": config['API']['virus_total_key']
+        }
+
+        result = requests.get(url, headers=headers)
+        data = result.json()
+        stats = data['data']['attributes']['stats'] 
+
+        return render_template('checkFile.html', result = stats ,username=session['username'])
 
 @app.route('/logout')
 def logout():
