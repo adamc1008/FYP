@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Check Pastes{% endblock %}
+{% block content %}
+<h1>Upload Terms to check</h1>
+<form action="/checkPastes" method="post" enctype="multipart/form-data">
+<input type="text" name="terms" id="terms" >
+    <input type="submit" value="submit">
+</form>
+
+{%if result is defined %}
+<p1>{{result}}</p1>
+{% endif %}
+
+{% endblock %}
