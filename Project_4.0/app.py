@@ -16,10 +16,11 @@ app.config["SECRET_KEY"] = config['Database']['secret_key']
 
 #app.config['MONGO_DBNAME'] = 'users'
 #app.config['SESSION_TYPE'] = 'mongodb'
+URI = config['Database']['Mongo_URI']
 app.config["MONGO_URI"] = config['Database']['Mongo_URI']
 
 
-client = MongoClient(config['Database']['Mongo_URI'])
+client = MongoClient(URI)
 
 try:
     #mongo = PyMongo(app)
@@ -179,6 +180,23 @@ def checkRoute():
         stats = data['data']['attributes']['stats'] 
 
         return render_template('checkFile.html', result = stats ,username=session['username'])
+    
+@app.route('/checkPastes', methods = ['POST', 'GET'])
+def checkPastes():
+    if request.method == 'GET':
+        return render_template('checkPastes.html', username=session['username'])
+    if request.method == 'POST':
+        url = "https://psbdmp.ws/api/v3/search/"
+
+        term = request.form.get('terms')
+        print(term)
+
+        url = url + term
+
+        response = requests.get(url)
+        print(response.json())
+        return render_template('checkPastes.html', result = response.json() ,username=session['username'])
+        #return render_template('checkAccount.html', results=response.json)
 
 @app.route('/logout')
 def logout():
