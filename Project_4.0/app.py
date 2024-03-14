@@ -7,6 +7,8 @@ from pymongo.mongo_client import MongoClient
 import configparser
 import bcrypt
 import requests
+import shodan
+from shodan import Shodan
 
 config = configparser.ConfigParser()
 config.read('config.ini')
@@ -197,6 +199,32 @@ def checkPastes():
         print(response.json())
         return render_template('checkPastes.html', result = response.json() ,username=session['username'])
         #return render_template('checkAccount.html', results=response.json)
+    
+@app.route('/footprinting', methods = ['POST', 'GET'])
+def footprinting():
+    if request.method == 'GET':
+        return render_template('footprinting.html', username=session['username'])
+    if request.method == 'POST':
+        shodan_key = config['API']['shodan_key']
+        api = Shodan(shodan_key)
+
+        ip = request.form.get('ip')
+        host = api.host(ip)
+
+        output = """
+            IP: {}
+            Organization: {}
+            Operating System: {}
+        """.format(host['ip_str'], host.get('org', 'n/a'), host.get('os', 'n/a'))
+
+        # Concatenate all banners to the output string
+        for item in host['data']:
+            output += """
+                Port: {}
+                Banner: {}
+
+            """.format(item['port'], item['data'])
+        return render_template('footprinting.html', result = output ,username=session['username'])
 
 @app.route('/logout')
 def logout():
