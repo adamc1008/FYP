@@ -8,7 +8,13 @@
 </form>
 
 {%if result is defined %}
-<p1>{{result}}</p1>
+{% for paste in result %}
+<div class="card mb-3" > 
+  <h5 class="card-title">Paste ID {{ paste.id }}</h5>
+  <p class="card-text">Time: {{ paste.time }}</p>
+  <p class="card-text">{{ paste.text }}</p>
+</div>
+{% endfor %}
 {% endif %}
 
 {% endblock %}

@@ -4,7 +4,6 @@ from flask_session import Session
 from flask_pymongo import PyMongo
 from pymongo.errors import PyMongoError
 from pymongo.mongo_client import MongoClient
-#from flask_session import Session
 import configparser
 import bcrypt
 import requests
@@ -198,13 +197,25 @@ def checkPastes():
         url = "https://psbdmp.ws/api/v3/search/"
 
         term = request.form.get('terms')
-        print(term)
+        terms = term.split(',') 
+        terms = [term.lower() for term in terms]   
+        print(terms)
 
-        url = url + term
+        url = url + terms[0]
 
         response = requests.get(url)
-        print(response.json())
-        return render_template('checkPastes.html', result = response.json() ,username=session['username'])
+        
+        data = json.loads(response.text)
+        
+        results = []
+        for paste in data:
+            text = paste['text'].lower()
+            if all(term in text for term in terms):
+                results.append(paste)
+        print(results)   
+        
+        #print(response.json())
+        return render_template('checkPastes.html', result = results ,username=session['username'])
         #return render_template('checkAccount.html', results=response.json)
     
 @app.route('/footprinting', methods = ['POST', 'GET'])
@@ -237,7 +248,7 @@ def footprinting():
 @app.route('/checkNews', methods = ['POST', 'GET'])
 def checkNews():
     if request.method == 'GET':
-        model = joblib.load('random_forest_model.pkl')
+        model = joblib.load('random_forest.pkl')
         client = ApifyClient(config['API']['apify_key'])
         
         username = session['username']
@@ -265,7 +276,7 @@ def checkNews():
             
             texts = [tweet['full_text'] for tweet in tweets]
             
-            vectorizer = joblib.load('vectorizer.pkl')
+            vectorizer = joblib.load('vectorizer_random_forest.pkl')
             vector_text = vectorizer.transform(texts)
             predictions = model.predict(vector_text)
             
