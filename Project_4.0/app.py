@@ -1,5 +1,6 @@
 import json
 from flask import Flask, jsonify, render_template, url_for, request, session, redirect, flash
+from flask_session import Session
 from flask_pymongo import PyMongo
 from pymongo.errors import PyMongoError
 from pymongo.mongo_client import MongoClient
@@ -7,12 +8,19 @@ from pymongo.mongo_client import MongoClient
 import configparser
 import bcrypt
 import requests
+import shodan
+from shodan import Shodan
+from apify_client import ApifyClient
+import joblib
+from sklearn.feature_extraction.text import CountVectorizer
 
 config = configparser.ConfigParser()
 config.read('config.ini')
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = config['Database']['secret_key']
+app.config['SESSION_TYPE'] = 'filesystem'
+Session(app)
 
 #app.config['MONGO_DBNAME'] = 'users'
 #app.config['SESSION_TYPE'] = 'mongodb'
@@ -197,10 +205,85 @@ def checkPastes():
         print(response.json())
         return render_template('checkPastes.html', result = response.json() ,username=session['username'])
         #return render_template('checkAccount.html', results=response.json)
+    
+@app.route('/footprinting', methods = ['POST', 'GET'])
+def footprinting():
+    if request.method == 'GET':
+        return render_template('footprinting.html', username=session['username'])
+    if request.method == 'POST':
+        shodan_key = config['API']['shodan_key']
+        api = Shodan(shodan_key)
+
+        ip = request.form.get('ip')
+        host = api.host(ip)
+
+        output = """
+            IP: {}
+            Organization: {}
+            Operating System: {}
+        """.format(host['ip_str'], host.get('org', 'n/a'), host.get('os', 'n/a'))
+
+        # Concatenate all banners to the output string
+        for item in host['data']:
+            output += """
+                Port: {}
+                Banner: {}
+
+            """.format(item['port'], item['data'])
+        return render_template('footprinting.html', result = output ,username=session['username'])
+    
+@app.route('/checkNews', methods = ['POST', 'GET'])
+def checkNews():
+    if request.method == 'GET':
+        model = joblib.load('random_forest_model.pkl')
+        client = ApifyClient(config['API']['apify_key'])
+        
+        username = session['username']
+        tweets_key = username + '_tweets'
+        
+        if tweets_key not in session:
+            tweets = []
+            run_input = {
+                #"searchTerms": ["apify"],
+                "searchMode": "live",
+                "maxTweets": 10,
+                "maxRequestRetries": 2,
+                "addUserInfo": False,
+                "scrapeTweetReplies": False,
+                #"handle": ["@cnn"],
+                "urls": ["https://twitter.com/search?q=%23cybersecuritynews&src=typeahead_click&f=live"],
+            }
+
+            # Run the Actor and wait for it to finish
+            run = client.actor("heLL6fUofdPgRXZie").call(run_input=run_input)
+
+            # Fetch and print Actor results from the run's dataset (if there are any)
+            for item in client.dataset(run["defaultDatasetId"]).iterate_items():
+                tweets.append(item)
+            
+            texts = [tweet['full_text'] for tweet in tweets]
+            
+            vectorizer = joblib.load('vectorizer.pkl')
+            vector_text = vectorizer.transform(texts)
+            predictions = model.predict(vector_text)
+            
+            for tweet, prediction in zip(tweets, predictions):
+                tweet['prediction'] = int(prediction)
+            
+            session[tweets_key] = tweets
+        else:
+            tweets = session[tweets_key]
+        # Prepare the Actor input
+        
+        
+        return render_template('checkNews.html', result = tweets, username=session['username'])
+    
 
 @app.route('/logout')
 def logout():
+    username = session['username']
     session.pop('username', None)
+    session.pop(username + '_tweets', None)
     return redirect(url_for('index'))
 
 
