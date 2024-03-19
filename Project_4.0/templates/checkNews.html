@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Footprinting{% endblock %}
+{% block content %}
+<h1>Recent Cybersecurity News from X</h1>
+
+{%if result is defined %}
+{% for tweet in result %}
+<div class="card mb-3"    
+            {% if tweet.prediction == 0 %} style="background-color: #FFFFFF;" 
+            {% elif tweet.prediction == 1 %} style="background-color: #FA8072;"
+            {% elif tweet.prediction == 2 %} style="background-color: #FFFACD;"
+            {% elif tweet.prediction == 3 %} style="background-color: #AFE1AF;"
+            {% else %} style="background-color: #FFFFFF;"
+            {% endif %}> 
+  <h5 class="card-title">Created at {{ tweet.created_at }}</h5>
+  <p class="card-text">{{ tweet.full_text }}</p>
+  <p class="card-text"><small class="text-muted">{{ tweet.prediction }}</small></p>
+  <!-- Add more features as needed -->
+</div>
+{% endfor %}
+{% endif %}
+
+{% endblock %}

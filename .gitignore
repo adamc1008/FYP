@@ -1,6 +1,7 @@
 # Ignore system files
 .DS_Store
 Thumbs.db
+random_forest_model.pkl
 
 # Ignore Python bytecode files
 __pycache__/
@@ -8,6 +9,8 @@ __pycache__/
 # Ignore virtual environment directories
 venv/
 env/
+myvenv/
+
 
 # Ignore IDE-specific files
 .vscode/
@@ -18,3 +21,4 @@ env/
 *.log
 
 config.ini
+random_forest_model.pkl
