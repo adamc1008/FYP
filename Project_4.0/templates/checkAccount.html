@@ -1,14 +1,28 @@
 {% extends "base.html" %}
 {% block title %}Home Page{% endblock %}
+{% block header %}Check Email Account{% endblock %}
 {% block content %}
-<h1>Enter Account to check</h1>
+
 <form action="/checkAccount" method="POST">
     <p>Account to Check <input type="text" name="account" /></p>
     <p><input type="submit" value="submit" /></p>
 </form>
 
 {%if result is defined %}
-<p1>{{result}}</p1>
+<div class="card mb-3">
+    {% for item in result["results"] %}
+        <h5 class="card-title">Database Name: {{ item["database_name"] }}</h5>
+        <p class="card-text">Email: {{ item["email"] }}</p>
+        <p class="card-text">Username: {{ item["username"] }}</p>
+        <p class="card-text">Hashed Password: {{ item["hashed_password"] }}</p>
+        <p class="card-text">ID: {{ item.get("id", "N/A") }}</p>
+        <p class="card-text">IP Address: {{ item.get("ip_address", "N/A") }}</p>
+        <p class="card-text">Name: {{ item.get("name", "N/A") }}</p>
+        <p class="card-text">Password: {{ item.get("password", "N/A") }}</p>
+        <p class="card-text">Phone: {{ item.get("phone", "N/A") }}</p>
+        <p class="card-text">VIN: {{ item.get("vin", "N/A") }}</p>
+    {% endfor %}
+</div>
 {% endif %}
 
 {% endblock %}
