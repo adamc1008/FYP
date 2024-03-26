@@ -7,7 +7,7 @@ from pymongo.mongo_client import MongoClient
 import configparser
 import bcrypt
 import requests
-import shodan
+#import shodan
 from shodan import Shodan
 from apify_client import ApifyClient
 import joblib
@@ -32,6 +32,7 @@ client = MongoClient(URI)
 try:
     #mongo = PyMongo(app)
     db = client.users["users"]
+    notifications = client.users["notifications"]
     #Session(app)
 except PyMongoError as e:
     print(f"Error connecting to MongoDB: {e}")
@@ -62,7 +63,17 @@ def signup():
 @app.route('/index')
 def index():
     if 'username' in session:
-        return render_template('index.html', username=session['username'])
+        ignore = {'_id': False, 'username': False}
+        data = list(notifications.find({'username': session['username']}, ignore))
+        results = []
+        for item in data:
+            print(item)
+            entry = eval(item["data"])
+            results.append(entry) 
+            print(entry)
+        print(results)
+        return render_template('index.html', result = results, username=session['username'])
+    
 
     return render_template('index.html')
 
@@ -101,6 +112,7 @@ def checkAccount():
 
         response = requests.get(url, headers=headers, params=querystring)
         print(response.json())
+        
         return render_template('checkAccount.html', result = response.json() ,username=session['username'])
         #return render_template('checkAccount.html', results=response.json)
 
@@ -141,10 +153,30 @@ def checkURL():
         data = result.json()
         stats = data['data']['attributes']['stats']
 
+        if(stats['malicious'] >= 4):
+            risk = 1
+        elif(stats['suspicious'] >= 10):
+            risk = 2
+        elif(stats['harmless'] >= 30 or stats['undetected'] >= 30):
+            risk = 3
+        else:
+            risk = 0
+        
         print(stats)
-
+        print(payload["url"])
+        output = {
+            "title": payload["url"],
+            "risk": risk,
+            "results" : {
+                "malicious": stats['malicious'],
+                "suspicious": stats['suspicious'],
+                "harmless": stats['harmless'],
+                "undetected": stats['undetected'],
+                "timeout": stats['timeout']
+            }
+        }
         #print(response.json())
-        return render_template('checkURL.html', result = stats ,username=session['username'])
+        return render_template('checkURL.html', result = output ,username=session['username'])
         #return render_template('checkAccount.html', results=response.json)
 
 
@@ -185,8 +217,34 @@ def checkRoute():
         result = requests.get(url, headers=headers)
         data = result.json()
         stats = data['data']['attributes']['stats'] 
-
-        return render_template('checkFile.html', result = stats ,username=session['username'])
+        
+        if(stats['malicious'] >= 4):
+            risk = 2
+        elif(stats['suspicious'] >= 10):
+            risk = 2
+        elif(stats['harmless'] >= 30 or stats['undetected'] >= 30):
+            risk = 3
+        else:
+            risk = 0
+        
+        output = {
+            "title": file.filename,
+            "risk": risk,
+            "results" : {
+                "malicious": stats['malicious'],
+                "suspicious": stats['suspicious'],
+                "harmless": stats['harmless'],
+                "undetected": stats['undetected'],
+                "timeout": stats['timeout'],
+                "failure": stats['failure'],
+                "type_unsupported": stats['type-unsupported'],
+                "confirmed_timeout": stats['confirmed-timeout'],
+            }
+        }
+        
+        print(output)
+        
+        return render_template('checkFile.html', result = output ,username=session['username'])
     
 @app.route('/checkPastes', methods = ['POST', 'GET'])
 def checkPastes():
@@ -208,8 +266,10 @@ def checkPastes():
         
         results = []
         for paste in data:
+            print(paste)
             text = paste['text'].lower()
             if all(term in text for term in terms):
+                paste['terms'] = terms
                 results.append(paste)
         print(results)   
         
@@ -227,7 +287,9 @@ def footprinting():
 
         ip = request.form.get('ip')
         host = api.host(ip)
-
+        '''
+        print(host)
+        
         output = """
             IP: {}
             Organization: {}
@@ -241,6 +303,27 @@ def footprinting():
                 Banner: {}
 
             """.format(item['port'], item['data'])
+            
+        '''
+        ports_info = []
+        for item in host['data']:
+            port_info = {
+                'port': item['port'],
+                'banner': item['data']
+            }
+            ports_info.append(port_info)
+        
+        output = {
+            "IP": host['ip_str'],
+            "Organization": host.get('org', 'n/a'),
+            "Operating System": host.get('os', 'n/a'),
+            "Ports": ports_info,
+            "Domains": host.get('domains', 'n/a'),
+            "hostname": host.get('hostnames', 'n/a')
+        }
+        
+        print(output)
+        
         return render_template('footprinting.html', result = output ,username=session['username'])
     
 @app.route('/checkNews', methods = ['POST', 'GET'])
@@ -288,6 +371,30 @@ def checkNews():
         
         
         return render_template('checkNews.html', result = tweets, username=session['username'])
+    
+@app.route('/save', methods=['POST'])
+def save_data():
+    username = session['username']
+    if username:
+        data = request.form.get('card_to_save')
+        #data = request.get_json()
+        print("Raw form data:", request.form.to_dict())
+        '''
+        try:
+            data_dict = json.loads(data)
+        except json.JSONDecodeError:
+            return "Invalid JSON data", 400
+            '''
+        print(data)
+        document = {
+            'username': username,
+            'data': data
+        }
+        
+        notifications.insert_one(document)
+        return '', 204
+    else:
+        return "Unauthorized", 401
     
 
 @app.route('/logout')

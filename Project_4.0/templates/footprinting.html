@@ -1,14 +1,26 @@
 {% extends "base.html" %}
 {% block title %}Footprinting{% endblock %}
+{% block header %}Footprinting{% endblock %}
 {% block content %}
-<h1>Footprint sites</h1>
 <form action="/footprinting" method="post" enctype="multipart/form-data">
-<input type="text" name="ip" id="ip" >
+    <input type="text" name="ip" id="ip">
     <input type="submit" value="submit">
 </form>
 
 {%if result is defined %}
-<p1>{{result}}</p1>
+<div class="card mb-3">
+    <h5 class="card-title">IP {{ result["IP"] }}</h5>
+    <p class="card-text"> Organisation {{ result["Organization"] }}</p>
+    <p class="card-text"> Operating System {{ result["Operating System"] }}</p>
+    {% for port_info in result["Ports"] %}
+        <p class="card-text">Port: {{ port_info.port }}</p>
+        <!--<p class="card-text"></p>Service: {{ port_info.service }}</p>-->
+        <p class="card-text"></p>Banner: {{ port_info.banner }}</p>
+    {% endfor %}
+    <p class="card-text"> Domains {{ result["Domains"] }}</p>
+    <p class="card-text"> Hostnames {{ result["hostname"] }}</p>
+
+</div>
 {% endif %}
 
 {% endblock %}
