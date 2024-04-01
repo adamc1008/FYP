@@ -16,6 +16,7 @@ from apify_client import ApifyClient
 import joblib
 from sklearn.feature_extraction.text import CountVectorizer
 
+
 config = configparser.ConfigParser()
 config.read('config.ini')
 
@@ -347,6 +348,7 @@ def footprinting():
         print(output)
         
         return render_template('footprinting.html', result = output ,username=session['username'])
+
     
 @app.route('/checkNews', methods = ['POST', 'GET'])
 def checkNews():
