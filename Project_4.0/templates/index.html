@@ -9,20 +9,25 @@
     <div class="row">
         {% for item in result %}
         <div class="col-lg-4 col-md-6 mb-4">
-            <div class="card" {% if item.risk == 0 %} style="background-color: #FFFFFF;" 
-            {% elif item.risk == 1 %} style="background-color: #FA8072;"
-            {% elif item.risk == 2 %} style="background-color: #FFFACD;"
-            {% elif item.risk == 3 %} style="background-color: #AFE1AF;"
-            {% else %} style="background-color: #FFFFFF;"
-            {% endif %}>
+            <div class="card" {% if item.risk==0 %} style="background-color: #FFFFFF;" {% elif item.risk==1 %}
+                style="background-color: #FA8072;" {% elif item.risk==2 %} style="background-color: #FFFACD;" {% elif
+                item.risk==3 %} style="background-color: #AFE1AF;" {% else %} style="background-color: #FFFFFF;" {%
+                endif %}>
                 <div class="card-body">
                     <h5 class="card-title">{{ item.title }}</h5>
                     <ul class="list-group list-group-flush">
                         {% for key, value in item.results.items() %}
-                            <li class="list-group-item">{{ key }}: {{ value }}</li>
+                        <li class="list-group-item">{{ key }}: {{ value }}</li>
                         {% endfor %}
                     </ul>
+                    <div class="card-footer text-right">
+                        <form id="deleteForm" action="/delete" method="POST">
+                            <input type="hidden" name="card_to_delete" value= "{{ item.id }}">
+                            <button type="submit" class="btn btn-primary">Delete</button>
+                        </form>
+                    </div>
                 </div>
+
             </div>
         </div>
         {% endfor %}

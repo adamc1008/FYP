@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Info{% endblock %}
+{% block header %}Info{% endblock %}
+{% block content %}
+
+<h1>Website Info Page</h1>
+
+<section id="section1">
+    <h2>Home</h2>
+    <p>Show all saved past search results.</p>
+</section>
+
+<section id="section2">
+    <h2>Check account</h2>
+    <p>Allow user to check if an email account was involved in a dataleak and shows what information may have been exposed.</p>
+</section>
+
+<section id="section3">
+    <h2>Check URL</h2>
+    <p>Allows the user to submit a URL to be scanned for threats. Results by VirusTotal.</p>
+</section>
+
+<section id="section4">
+    <h2>Check File</h2>
+    <p>Allows the user to submit a file to be scanned for threats. Results by VirusTotal.</p>
+</section>
+
+<section id="section5">
+    <h2>Check Pastes</h2>
+    <p>Allows the user to scan several sites for pastes containing certain terms. Hackers have been known to use pastes to dump data.</p>
+</section>
+
+<section id="section6">
+    <h2>Footprinting</h2>
+    <p>Allows the user to scan open ports of a server and see what services are exposed.</p>
+</section>
+
+<section id="section7">
+    <h2>Check news</h2>
+    <p>Allows the user to retrieve recent posts from X relating to cybersecurity and gives each a threat ranking. Results are ranked low,medium and high risk and this is shown by the colours green, yellow and red.</p>
+</section>
+
+{% endblock %}

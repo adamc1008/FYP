@@ -6,18 +6,22 @@
     
 
 </head>
-<body>
+<body style="background-color: #e3f2fd; margin: 20px; font-size: 20px;">
     <h1>{% block header %}{% endblock %}</h1>
     <div class="container">
         <div class="header">
-            <nav class="navbar navbar-expand-lg navbar-dark bg-dark"">
+            <nav class="navbar navbar-expand-lg navbar-dark bg-dark" style="padding: 20px; font-size: 20px;">
                 
                 <ul class="navbar-nav">
                     
                     {%if username is defined %}
 
-                    <a class="navbar-brand" href="#">{{username}}</a>
-
+                    <h2 class="navbar-brand" href="#"></h2>
+                    <!--
+                    <div class="container-fluid">
+                        <span class="navbar-brand mb-0 h1">User: {{username}}</span>
+                      </div>
+-->
                     <li role="presentation" class="nav-item active">
                         <a class="nav-link" href="/index"> Home <span class="sr-only">(current)</span></a>
                     </li>
@@ -46,14 +50,15 @@
                         <a class="nav-link" href="/checkNews"> Check News </a>
                     </li>
 
+                    <li role="presentation" class="nav-item">
+                        <a class="nav-link" href="/info"> Info </a>
+                    </li>
+
                     <li role="presentation" class="nav-item ml-auto">
                         <a class="nav-link" href="/logout"> Logout </a>
                     </li>   
 
                     {% else %}
-                    <li role="presentation" class="nav-item active">
-                        <a class="nav-link" href="#"> Home <span class="sr-only">(current)</span></a>
-                    </li>
 
                     <li role="presentation" class="nav-item">
                         <a class="nav-link" href="/signin"> Sign In </a>
