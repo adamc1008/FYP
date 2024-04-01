@@ -1,4 +1,7 @@
+import http
 import json
+import time
+from bson import ObjectId
 from flask import Flask, jsonify, render_template, url_for, request, session, redirect, flash
 from flask_session import Session
 from flask_pymongo import PyMongo
@@ -42,7 +45,10 @@ except PyMongoError as e:
 @app.route("/")
 @app.route("/main")
 def main():
-    return render_template('index.html')
+    if 'username' in session:
+        return render_template('index.html')
+    else:
+        return redirect(url_for('signin'))
 
 
 @app.route("/signup", methods=['POST', 'GET'])
@@ -64,19 +70,19 @@ def signup():
 @app.route('/index')
 def index():
     if 'username' in session:
-        ignore = {'_id': False, 'username': False}
+        ignore = {'username': False}
         data = list(notifications.find({'username': session['username']}, ignore))
         results = []
         for item in data:
             print(item)
             entry = eval(item["data"])
+            entry["id"] = str(item["_id"])
             results.append(entry) 
             print(entry)
         print(results)
         return render_template('index.html', result = results, username=session['username'])
-    
-
-    return render_template('index.html')
+    else:
+        return redirect(url_for('signin'))
 
 @app.route('/signin', methods=['GET', 'POST'])
 def signin():
@@ -88,12 +94,16 @@ def signin():
             if bcrypt.hashpw(request.form['password'].encode('utf-8'), signin_user['password']) == \
                     signin_user['password']:
                 session['username'] = request.form['username']
-                return redirect(url_for('index'))
+                return redirect(url_for('info'))
 
         flash('Username and password combination is wrong')
         return render_template('signin.html')
 
     return render_template('signin.html')
+
+@app.route('/info', methods=['GET'])
+def info():
+    return render_template('info.html',username=session['username'])
 
 @app.route('/checkAccount', methods = ['POST', 'GET'])
 def checkAccount():
@@ -119,8 +129,9 @@ def checkAccount():
 
 @app.route('/checkURL', methods = ['POST', 'GET'])
 def checkURL():
+    past_results = get_past_results('URL')
     if request.method == 'GET':
-        return render_template('checkURL.html', username=session['username'])
+        return render_template('checkURL.html', old_results = past_results, username=session['username'])
     if request.method == 'POST':
 
 
@@ -142,6 +153,8 @@ def checkURL():
         id = data['data']['id']
 
         print(response.text)
+        
+        time.sleep(20)
 
         url = "https://www.virustotal.com/api/v3/analyses/" + id
 
@@ -168,6 +181,7 @@ def checkURL():
         output = {
             "title": payload["url"],
             "risk": risk,
+            "type": "URL",
             "results" : {
                 "malicious": stats['malicious'],
                 "suspicious": stats['suspicious'],
@@ -177,14 +191,15 @@ def checkURL():
             }
         }
         #print(response.json())
-        return render_template('checkURL.html', result = output ,username=session['username'])
+        return render_template('checkURL.html', result = output , old_results = past_results, username=session['username'])
         #return render_template('checkAccount.html', results=response.json)
 
 
 @app.route('/checkFile', methods = ['POST', 'GET'])
 def checkRoute():
+    past_results = get_past_results('file')
     if request.method == 'GET':
-        return render_template('checkFile.html', username=session['username'])
+        return render_template('checkFile.html', old_results= past_results, username=session['username'])
     if request.method == 'POST':
 
 
@@ -195,7 +210,7 @@ def checkRoute():
             return render_template('checkFile.html', result = "Unable to pass file to the server" ,username=session['username'])
         file.save(file.filename)
 
-        #payload = { "url": request.form.get('file') }
+        payload = { "url": request.form.get('file') }
         files = { "file": (file.filename, open(file.filename, "rb"), "text/plain") }
         headers = {
             "accept": "application/json",
@@ -203,7 +218,10 @@ def checkRoute():
         }
 
         response = requests.post(url, files=files, headers=headers)
+        #conn.request("POST", "/api/v3/files", files, headers)
+        
         data = response.json()
+        #data = json.loads(conn.getresponse().read().decode("utf-8"))
         id = data['data']['id']
 
         ################################################
@@ -215,6 +233,8 @@ def checkRoute():
             "x-apikey": config['API']['virus_total_key']
         }
 
+        time.sleep(20)
+        
         result = requests.get(url, headers=headers)
         data = result.json()
         stats = data['data']['attributes']['stats'] 
@@ -231,6 +251,7 @@ def checkRoute():
         output = {
             "title": file.filename,
             "risk": risk,
+            "type": "file",
             "results" : {
                 "malicious": stats['malicious'],
                 "suspicious": stats['suspicious'],
@@ -245,12 +266,13 @@ def checkRoute():
         
         print(output)
         
-        return render_template('checkFile.html', result = output ,username=session['username'])
+        return render_template('checkFile.html', result = output, old_results= past_results, username=session['username'])
     
 @app.route('/checkPastes', methods = ['POST', 'GET'])
 def checkPastes():
+    past_results = get_past_results('paste')
     if request.method == 'GET':
-        return render_template('checkPastes.html', username=session['username'])
+        return render_template('checkPastes.html', old_results=past_results, username=session['username'])
     if request.method == 'POST':
         url = "https://psbdmp.ws/api/v3/search/"
 
@@ -275,7 +297,7 @@ def checkPastes():
         print(results)   
         
         #print(response.json())
-        return render_template('checkPastes.html', result = results ,username=session['username'])
+        return render_template('checkPastes.html', result = results, old_results=past_results, username=session['username'])
         #return render_template('checkAccount.html', results=response.json)
     
 @app.route('/footprinting', methods = ['POST', 'GET'])
@@ -398,6 +420,25 @@ def save_data():
     else:
         return "Unauthorized", 401
     
+@app.route('/delete', methods=['POST'])
+def delete_data():
+    username = session['username']
+    if username:
+        data = request.form.get('card_to_delete')
+        #data = request.get_json()
+        print(data)
+        print("Raw form data:", request.form.to_dict())
+        '''
+        try:
+            data_dict = json.loads(data)
+        except json.JSONDecodeError:
+            return "Invalid JSON data", 400
+            '''
+        result = notifications.delete_one({'_id': ObjectId(data)})
+        return redirect(url_for('index'))
+    else:
+        return "Unauthorized", 401
+    
 
 @app.route('/logout')
 def logout():
@@ -406,6 +447,17 @@ def logout():
     session.pop(username + '_tweets', None)
     return redirect(url_for('index'))
 
+def get_past_results(type):
+    data = list(notifications.find( {'username': session['username'], 'data': {'$exists': True}}))
+    past_results = []
+    print(data)
+    for item in data:
+        print(item)
+        entry = eval(item["data"])
+        if entry.get('type') == type:
+            entry['_id'] = str(item['_id'])
+            past_results.append(entry) 
+    return past_results
 
 if __name__ == "__main__":
     app.run(debug=True)

@@ -8,24 +8,63 @@
     <input type="submit" value="submit">
 </form>
 
-{%if result is defined %}
-<div class="card mb-3">
-    <h5 class="card-title">File Name: {{ result["filename"] }}</h5>
-    <p class="card-text"> Malicious:  {{ result["results"]["malicious"] }}</p>
-    <p class="card-text"> Suspicious: {{ result["results"]["suspicious"] }}</p>
-    <p class="card-text"> Undetected:  {{ result["results"]["undetected"] }}</p>
-    <p class="card-text"> Harmless:  {{ result["results"]["harmless"] }}</p>
-    <p class="card-text"> Timeout:  {{ result["results"]["timeout"] }}</p>
-    <p class="card-text"> Confirmed Timeout:  {{ result["results"]["confirmed_timeout"] }}</p>
-    <p class="card-text"> Failure:  {{ result["results"]["failure"] }}</p>
-    <p class="card-text"> Type Unsupported: {{ result["results"]["type_unsupported"] }}</p>
-    <form id="saveForm" action="/save" method="POST">
-        <input type="hidden" name="card_to_save" value="{{ result }}">
-        <button type="submit" class="btn btn-primary">Save</button>
-    </form>
-    
+<h4>Current Result</h4>
+<div class="row">
+<div class="card col-lg-5 col-md-6 mb-4"  style="margin-right: 10px; margin-left: 10px;">
+    <h5 class="card-title">Result keys: </h5>
+    <p class="card-text"> Malicious: number of reports saying the URL is malicious </p>
+    <p class="card-text"> Suspicious: number of reports saying the URL is suspicious</p>
+    <p class="card-text"> Undetected: number of reports saying the URL is undetected to the software</p>
+    <p class="card-text"> Harmless: number of reports saying the URL is harmless</p>
+    <p class="card-text"> Timeout: number of reports saying the URL timed out when being searched</p>
 </div>
 
-{% endif %}
+
+<div class="card col-lg-5 col-md-6 mb-4">
+    {%if result is defined %}
+    <h5 class="card-title">File Name: {{ result["filename"] }}</h5>
+    <p class="card-text"> Malicious: {{ result["results"]["malicious"] }}</p>
+    <p class="card-text"> Suspicious: {{ result["results"]["suspicious"] }}</p>
+    <p class="card-text"> Undetected: {{ result["results"]["undetected"] }}</p>
+    <p class="card-text"> Harmless: {{ result["results"]["harmless"] }}</p>
+    <p class="card-text"> Timeout: {{ result["results"]["timeout"] }}</p>
+    <p class="card-text"> Confirmed Timeout: {{ result["results"]["confirmed_timeout"] }}</p>
+    <p class="card-text"> Failure: {{ result["results"]["failure"] }}</p>
+    <p class="card-text"> Type Unsupported: {{ result["results"]["type_unsupported"] }}</p>
+    <div class="card-footer text-right">
+        <form id="saveForm" action="/save" method="POST">
+            <input type="hidden" name="card_to_save" value="{{ result }}">
+            <button type="submit" class="btn btn-primary">Save</button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+</div>
+
+<br>
+<div class="row">
+    <h4>Past Results</h4>
+    </div>
+<div class="row">
+    {% if old_results is defined %}
+    {% for item in old_results %}
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card" {% if item.risk==0 %} style="background-color: #FFFFFF;" {% elif item.risk==1 %}
+            style="background-color: #FA8072;" {% elif item.risk==2 %} style="background-color: #FFFACD;" {% elif
+            item.risk==3 %} style="background-color: #AFE1AF;" {% else %} style="background-color: #FFFFFF;" {% endif
+            %}>
+            <div class="card-body">
+                <h5 class="card-title">{{ item.title }}</h5>
+                <ul class="list-group list-group-flush">
+                    {% for key, value in item.results.items() %}
+                    <li class="list-group-item">{{ key }}: {{ value }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+</div>
 
 {% endblock %}
