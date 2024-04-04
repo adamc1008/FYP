@@ -273,24 +273,24 @@ def checkPastes():
     if request.method == 'GET':
         return render_template('checkPastes.html', old_results=past_results, username=session['username'])
     if request.method == 'POST':
-        url = "https://psbdmp.ws/api/v3/search/"
+        url = "https://psbdmp.ws/api/v3/latest"
 
         term = request.form.get('terms')
         terms = term.split(',') 
         terms = [term.lower() for term in terms]   
         print(terms)
 
-        url = url + terms[0]
+        #url = url + terms[0]
 
         response = requests.get(url)
         
         data = json.loads(response.text)
-        
+        print(data)
         results = []
         for paste in data:
             print(paste)
             text = paste['text'].lower()
-            if all(term in text for term in terms):
+            if all(term in text for term in terms) and data is not None:
                 paste['terms'] = terms
                 results.append(paste)
         print(results)   
