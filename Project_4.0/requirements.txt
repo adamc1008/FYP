@@ -45,7 +45,7 @@ idna==3.6
 imbalanced-learn==0.12.0
 importlib_metadata==7.0.2
 itsdangerous==2.1.2
-Jinja2==3.1.3
+Jinja2==3.1.6
 joblib==1.3.2
 kaitaistruct==0.10
 kiwisolver==1.4.5
